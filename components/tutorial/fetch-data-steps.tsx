@@ -1,163 +1,133 @@
-import { TutorialStep } from "./tutorial-step";
-import { CodeBlock } from "./code-block";
+// app/dashboard/page.tsx
+import { redirect } from "next/navigation";
+import { createSupabaseServerClient } from "@/lib/supabaseServer";
 
-const create = `create table notes (
-  id bigserial primary key,
-  title text
-);
+export default async function DashboardPage() {
+  const supabase = createSupabaseServerClient();
 
-insert into notes(title)
-values
-  ('Today I created a Supabase project.'),
-  ('I added some data and queried it from Next.js.'),
-  ('It was awesome!');
-`.trim();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-const rls = `alter table notes enable row level security;
-create policy "Allow public read access" on notes
-for select
-using (true);`.trim();
+  if (!user) {
+    redirect("/login");
+  }
 
-const server = `import { createClient } from '@/lib/supabase/server'
+  // Get latest onboarding row for this user
+  const { data: onboarding, error } = await supabase
+    .from("onboarding_responses")
+    .select("age, height_cm, weight_kg, goal, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-export default async function Page() {
-  const supabase = await createClient()
-  const { data: notes } = await supabase.from('notes').select()
+  const hasOnboarding = !!onboarding && !error;
 
-  return <pre>{JSON.stringify(notes, null, 2)}</pre>
+  return (
+    <div className="py-8 space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="mb-2 text-2xl font-bold">PrimeCoach Dashboard</h1>
+        <p className="text-sm text-slate-300">
+          Welcome, <span className="font-semibold">{user.email}</span>
+        </p>
+      </div>
+
+      {/* Onboarding status */}
+      {!hasOnboarding && (
+        <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/5 px-4 py-3 text-sm text-yellow-100">
+          <p className="font-medium">You haven&apos;t completed onboarding yet.</p>
+          <p className="mt-1 text-yellow-200/80">
+            Tell us about your body, goals, and training setup so we can build
+            your plan.
+          </p>
+          <a
+            href="/onboarding"
+            className="mt-3 inline-flex rounded-md bg-yellow-500 px-4 py-1.5 text-xs font-medium text-black hover:bg-yellow-400"
+          >
+            Complete onboarding
+          </a>
+        </div>
+      )}
+
+      {/* Onboarding summary card */}
+      {hasOnboarding && (
+        <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+          <h2 className="text-sm font-semibold text-slate-200 uppercase tracking-[0.18em]">
+            Your profile
+          </h2>
+          <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+            <div>
+              <p className="text-xs text-slate-500">Age</p>
+              <p className="font-medium text-slate-100">
+                {onboarding.age ?? "-"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">Height</p>
+              <p className="font-medium text-slate-100">
+                {onboarding.height_cm ? `${onboarding.height_cm} cm` : "-"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">Weight</p>
+              <p className="font-medium text-slate-100">
+                {onboarding.weight_kg ? `${onboarding.weight_kg} kg` : "-"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">Goal</p>
+              <p className="font-medium text-slate-100">
+                {goalLabel(onboarding.goal)}
+              </p>
+            </div>
+          </div>
+          <p className="mt-4 text-xs text-slate-500">
+            Next: We&apos;ll generate a weekly workout + nutrition plan based on this
+            profile.
+          </p>
+        </div>
+      )}
+
+      {/* Placeholder for AI plan (coming soon) */}
+      <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
+        <h2 className="text-sm font-semibold text-slate-200 mb-2">
+          Your AI plan
+        </h2>
+        <p className="text-sm text-slate-400">
+          This is where your weekly workout split and macros will appear once we
+          connect the AI plan generator.
+        </p>
+      </div>
+    </div>
+  );
 }
-`.trim();
 
-const client = `'use client'
-
-import { createClient } from '@/lib/supabase/client'
-import { useEffect, useState } from 'react'
-
-export default function Page() {
-  const [notes, setNotes] = useState<any[] | null>(null)
-  const supabase = createClient()
-
-  useEffect(() => {
-    const getData = async () => {
-      const { data } = await supabase.from('notes').select()
-      setNotes(data)
-    }
-    getData()
-  }, [])
-
-  return <pre>{JSON.stringify(notes, null, 2)}</pre>
+// helper to show nice goal text
+function goalLabel(goal?: string | null) {
+  if (!goal) return "-";
+  switch (goal) {
+    case "lose_fat":
+      return "Lose fat";
+    case "gain_muscle":
+      return "Gain muscle";
+    case "recomp":
+      return "Recomposition";
+    case "strength":
+      return "Strength";
+    default:
+      return goal;
+  }
 }
-`.trim();
+
+
+
 
 export function FetchDataSteps() {
   return (
     <ol className="flex flex-col gap-6">
-      <TutorialStep title="Create some tables and insert some data">
-        <p>
-          Head over to the{" "}
-          <a
-            href="https://supabase.com/dashboard/project/_/editor"
-            className="font-bold hover:underline text-foreground/80"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Table Editor
-          </a>{" "}
-          for your Supabase project to create a table and insert some example
-          data. If you&apos;re stuck for creativity, you can copy and paste the
-          following into the{" "}
-          <a
-            href="https://supabase.com/dashboard/project/_/sql/new"
-            className="font-bold hover:underline text-foreground/80"
-            target="_blank"
-            rel="noreferrer"
-          >
-            SQL Editor
-          </a>{" "}
-          and click RUN!
-        </p>
-        <CodeBlock code={create} />
-      </TutorialStep>
-
-      <TutorialStep title="Enable Row Level Security (RLS)">
-        <p>
-          Supabase enables Row Level Security (RLS) by default. To query data
-          from your <code>notes</code> table, you need to add a policy. You can
-          do this in the{" "}
-          <a
-            href="https://supabase.com/dashboard/project/_/editor"
-            className="font-bold hover:underline text-foreground/80"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Table Editor
-          </a>{" "}
-          or via the{" "}
-          <a
-            href="https://supabase.com/dashboard/project/_/sql/new"
-            className="font-bold hover:underline text-foreground/80"
-            target="_blank"
-            rel="noreferrer"
-          >
-            SQL Editor
-          </a>
-          .
-        </p>
-        <p>
-          For example, you can run the following SQL to allow public read
-          access:
-        </p>
-        <CodeBlock code={rls} />
-        <p>
-          You can learn more about RLS in the{" "}
-          <a
-            href="https://supabase.com/docs/guides/auth/row-level-security"
-            className="font-bold hover:underline text-foreground/80"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Supabase docs
-          </a>
-          .
-        </p>
-      </TutorialStep>
-
-      <TutorialStep title="Query Supabase data from Next.js">
-        <p>
-          To create a Supabase client and query data from an Async Server
-          Component, create a new page.tsx file at{" "}
-          <span className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-xs font-medium text-secondary-foreground border">
-            /app/notes/page.tsx
-          </span>{" "}
-          and add the following.
-        </p>
-        <CodeBlock code={server} />
-        <p>Alternatively, you can use a Client Component.</p>
-        <CodeBlock code={client} />
-      </TutorialStep>
-
-      <TutorialStep title="Explore the Supabase UI Library">
-        <p>
-          Head over to the{" "}
-          <a
-            href="https://supabase.com/ui"
-            className="font-bold hover:underline text-foreground/80"
-          >
-            Supabase UI library
-          </a>{" "}
-          and try installing some blocks. For example, you can install a
-          Realtime Chat block by running:
-        </p>
-        <CodeBlock
-          code={
-            "npx shadcn@latest add https://supabase.com/ui/r/realtime-chat-nextjs.json"
-          }
-        />
-      </TutorialStep>
-
-      <TutorialStep title="Build in a weekend and scale to millions!">
-        <p>You&apos;re ready to launch your product to the world! 🚀</p>
-      </TutorialStep>
+      {/* Tutorial steps... */}
     </ol>
   );
 }
