@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic";
+import { unstable_noStore as noStore } from "next/cache";
 // app/dashboard/page.tsx
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -31,6 +31,9 @@ function goalLabel(goal?: string | null) {
 }
 
 export default async function DashboardPage() {
+
+    // 🔴 Tell Next: do NOT cache this page (per-request)
+  noStore();
   // ✅ createClient already returns the Supabase client; no double-await
   const supabase = await createClient();
 

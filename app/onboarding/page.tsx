@@ -1,11 +1,14 @@
-export const dynamic = "force-dynamic";
+
 
 // app/(protected)/onboarding/page.tsx
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { unstable_noStore as noStore } from "next/cache";
 import OnboardingForm from "./OnboardingForm";
 
 export default async function OnboardingPage() {
+    // prevent caching, this depends on logged-in user
+  noStore();
   const supabase = createClient();
   const {
     data: { user },
