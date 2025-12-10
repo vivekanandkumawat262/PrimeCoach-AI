@@ -27,25 +27,53 @@ export function LoginForm({
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const supabase = createClient();
-    setIsLoading(true);
-    setError(null);
+      e.preventDefault();
+      const supabase = createClient();
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
-      // Update this route to redirect to an authenticated route. The user already has an active session.
-      router.push("/protected");
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
-    }
+      try {
+        // 1) Log the user in
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+
+        const user = data.user;
+        if (!user) {
+          throw new Error("Login failed. Please try again.");
+        }
+
+        // 2) Check if onboarding exists for this user
+        const { data: onboardingRow, error: onboardingError } = await supabase
+          .from("onboarding_responses")
+          .select("id")
+          .eq("user_id", user.id)
+          .limit(1)
+          .maybeSingle();
+
+        if (onboardingError && onboardingError.code !== "PGRST116") {
+          // PGRST116 = no rows found (that's fine for first login)
+          console.error(onboardingError);
+        }
+
+        // 3) Redirect based on onboarding state
+        if (!onboardingRow) {
+          // First time / no onboarding done yet
+          router.push("/onboarding");
+        } else {
+          // Onboarding already completed
+          router.push("/dashboard");
+        }
+      } catch (error: unknown) {
+        setError(error instanceof Error ? error.message : "An error occurred");
+      } finally {
+        setIsLoading(false);
+      }
   };
+
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
