@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 // app/(protected)/onboarding/page.tsx
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
