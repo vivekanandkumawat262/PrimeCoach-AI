@@ -43,6 +43,20 @@ export async function POST() {
       );
     }
 
+    // Check subscription
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_subscribed")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (!profile?.is_subscribed) {
+      return NextResponse.json(
+        { error: "Subscription required to generate plans" },
+        { status: 403 }
+      );
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
@@ -64,6 +78,11 @@ Age: ${onboarding.age}
 Height: ${onboarding.height_cm} cm
 Weight: ${onboarding.weight_kg} kg
 Primary goal: ${onboarding.goal}
+Gym access: ${onboarding.gym_access}
+Diet preference: ${onboarding.diet_pref}
+Allergies: ${onboarding.allergies || "None"}
+Available equipment: ${onboarding.equipment || "Not specified"}
+
 
 Return ONLY valid JSON with this shape (no extra text):
 

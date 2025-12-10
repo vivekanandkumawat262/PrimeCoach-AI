@@ -25,10 +25,11 @@ export default function OnboardingForm({ userId }: Props) {
   const [allergies, setAllergies] = useState("");
   const [equipment, setEquipment] = useState<string[]>([]);
   const [injuries, setInjuries] = useState("");
+  const [gymAccess, setGymAccess] = useState("commercial_gym");
 
   function toggleEquipment(value: string) {
-    setEquipment(prev =>
-      prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]
+    setEquipment((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
     );
   }
 
@@ -39,11 +40,11 @@ export default function OnboardingForm({ userId }: Props) {
 
     const allergiesArray = allergies
       .split(",")
-      .map(a => a.trim())
+      .map((a) => a.trim())
       .filter(Boolean);
 
     const supabase = createClient();
-    
+
     const { data, error } = await supabase
       .from("onboarding_responses")
       .insert({
@@ -55,7 +56,8 @@ export default function OnboardingForm({ userId }: Props) {
         activity_level: activityLevel,
         goal,
         experience_level: experienceLevel,
-        gym_access: trainingLocation !== "home",
+        // gym_access: trainingLocation !== "home",
+        gym_access: gymAccess,
         training_location: trainingLocation,
         diet_pref: dietPref,
         allergies: allergiesArray,
@@ -93,7 +95,7 @@ export default function OnboardingForm({ userId }: Props) {
               max={90}
               className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
               value={age}
-              onChange={e => setAge(e.target.value)}
+              onChange={(e) => setAge(e.target.value)}
               required
             />
           </div>
@@ -105,7 +107,7 @@ export default function OnboardingForm({ userId }: Props) {
               type="number"
               className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
               value={heightCm}
-              onChange={e => setHeightCm(e.target.value)}
+              onChange={(e) => setHeightCm(e.target.value)}
               required
             />
           </div>
@@ -117,7 +119,7 @@ export default function OnboardingForm({ userId }: Props) {
               type="number"
               className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
               value={weightKg}
-              onChange={e => setWeightKg(e.target.value)}
+              onChange={(e) => setWeightKg(e.target.value)}
               required
             />
           </div>
@@ -129,7 +131,7 @@ export default function OnboardingForm({ userId }: Props) {
             <select
               className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
               value={gender}
-              onChange={e => setGender(e.target.value)}
+              onChange={(e) => setGender(e.target.value)}
             >
               <option value="male">Male</option>
               <option value="female">Female</option>
@@ -144,7 +146,7 @@ export default function OnboardingForm({ userId }: Props) {
             <select
               className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
               value={activityLevel}
-              onChange={e => setActivityLevel(e.target.value)}
+              onChange={(e) => setActivityLevel(e.target.value)}
             >
               <option value="sedentary">Mostly sitting</option>
               <option value="light">Lightly active</option>
@@ -169,7 +171,7 @@ export default function OnboardingForm({ userId }: Props) {
             <select
               className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
               value={goal}
-              onChange={e => setGoal(e.target.value)}
+              onChange={(e) => setGoal(e.target.value)}
             >
               <option value="lose_fat">Lose fat</option>
               <option value="gain_muscle">Gain muscle</option>
@@ -185,7 +187,7 @@ export default function OnboardingForm({ userId }: Props) {
             <select
               className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
               value={experienceLevel}
-              onChange={e => setExperienceLevel(e.target.value)}
+              onChange={(e) => setExperienceLevel(e.target.value)}
             >
               <option value="beginner">Beginner</option>
               <option value="intermediate">Intermediate</option>
@@ -202,7 +204,7 @@ export default function OnboardingForm({ userId }: Props) {
             rows={3}
             className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
             value={injuries}
-            onChange={e => setInjuries(e.target.value)}
+            onChange={(e) => setInjuries(e.target.value)}
             placeholder="e.g., knee pain, lower back issues"
           />
         </div>
@@ -219,7 +221,7 @@ export default function OnboardingForm({ userId }: Props) {
             Training Location
           </label>
           <div className="flex gap-4 text-sm">
-            {["gym", "home", "both"].map(option => (
+            {["gym", "home", "both"].map((option) => (
               <button
                 key={option}
                 type="button"
@@ -230,11 +232,7 @@ export default function OnboardingForm({ userId }: Props) {
                     : "border-slate-700 bg-slate-900"
                 }`}
               >
-                {option === "gym"
-                  ? "Gym"
-                  : option === "home"
-                  ? "Home"
-                  : "Both"}
+                {option === "gym" ? "Gym" : option === "home" ? "Home" : "Both"}
               </button>
             ))}
           </div>
@@ -245,21 +243,37 @@ export default function OnboardingForm({ userId }: Props) {
             Equipment (home workouts)
           </label>
           <div className="flex flex-wrap gap-3 text-sm">
-            {["dumbbells", "bands", "pullup_bar", "bench", "none"].map(opt => (
-              <label key={opt} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={equipment.includes(opt)}
-                  onChange={() => toggleEquipment(opt)}
-                />
-                <span className="capitalize">
-                  {opt.replace("_", " ").replace("bands", "Resistance bands")}
-                </span>
-              </label>
-            ))}
+            {["dumbbells", "bands", "pullup_bar", "bench", "none"].map(
+              (opt) => (
+                <label key={opt} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={equipment.includes(opt)}
+                    onChange={() => toggleEquipment(opt)}
+                  />
+                  <span className="capitalize">
+                    {opt.replace("_", " ").replace("bands", "Resistance bands")}
+                  </span>
+                </label>
+              )
+            )}
           </div>
         </div>
       </section>
+
+      {/* Gym access */}
+      <div className="space-y-2">
+        <label className="block text-sm text-slate-200">Gym access</label>
+        <select
+          className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+          value={gymAccess}
+          onChange={(e) => setGymAccess(e.target.value)}
+        >
+          <option value="commercial_gym">Commercial gym available</option>
+          <option value="home_only">Home workouts only</option>
+          <option value="both">Both gym and home</option>
+        </select>
+      </div>
 
       {/* Diet */}
       <section className="space-y-4">
@@ -275,7 +289,7 @@ export default function OnboardingForm({ userId }: Props) {
             <select
               className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
               value={dietPref}
-              onChange={e => setDietPref(e.target.value)}
+              onChange={(e) => setDietPref(e.target.value)}
             >
               <option value="none">No preference</option>
               <option value="veg">Vegetarian</option>
@@ -292,16 +306,14 @@ export default function OnboardingForm({ userId }: Props) {
             <input
               className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
               value={allergies}
-              onChange={e => setAllergies(e.target.value)}
+              onChange={(e) => setAllergies(e.target.value)}
               placeholder="e.g., peanuts, lactose"
             />
           </div>
         </div>
       </section>
 
-      {errorMsg && (
-        <p className="text-sm text-red-400">{errorMsg}</p>
-      )}
+      {errorMsg && <p className="text-sm text-red-400">{errorMsg}</p>}
 
       <button
         type="submit"

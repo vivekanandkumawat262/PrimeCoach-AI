@@ -66,8 +66,15 @@ export default async function DashboardPage() {
     .limit(1)
     .maybeSingle();
 
-   
   const hasPlan = !!plan;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_subscribed, subscription_status")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const isSubscribed = profile?.is_subscribed;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -178,6 +185,21 @@ export default async function DashboardPage() {
               </p>
             </div>
             <GeneratePlanButton />
+
+            {/* for subscriber only */}
+
+            {isSubscribed ? (
+              <GeneratePlanButton />
+            ) : (
+              <a
+                href="/pricing"
+                className="inline-flex items-center rounded-md bg-emerald-500 px-4 py-1.5 text-xs font-medium text-black hover:bg-emerald-400"
+              >
+                Upgrade to unlock AI plans
+              </a>
+            )}
+
+
           </div>
 
           {/* AI plan section */}
